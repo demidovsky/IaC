@@ -1,0 +1,10 @@
+.DS_Store
+.vscode
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.backup
+private_key
+public_key

@@ -1,0 +1,3 @@
+domain_name: mydomain.com
+home_dir: /home/user
+letsencrypt_email: hi@mydomain.com

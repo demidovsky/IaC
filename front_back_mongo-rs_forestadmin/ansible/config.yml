@@ -1,0 +1,27 @@
+backend_ip: 11.111.111.111
+backend_domain_name: backend.mydomain.io
+admin_domain_name: admin.mydomain.io
+home_dir: /home/user
+letsencrypt_email: me@mydomain.io
+
+aws_region: us-east-1
+aws_ecr_user_key_id: AAAA............WWWW
+aws_ecr_user_secret: 77....................................xx
+aws_ecr_repository: 222222222222
+
+mongo_root_username: my_root
+mongo_api_username: my_user
+mongo_db_name: my_db
+mongo_db_port: 27047
+mongo_db_port2: 27027
+mongo_db_port3: 27037
+
+database_service_name: my-mongo
+backend_service_name: my-backend
+admin_service_name: my-admin
+
+backend_internal_port: 3333
+backend_external_port: 4444
+
+forest_env_secret: 0000....................cccc
+forest_auth_secret: ffff....................1111

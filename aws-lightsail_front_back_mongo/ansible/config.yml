@@ -1,0 +1,24 @@
+domain_name: example.com
+backend_domain_name: api.example.com
+home_dir: /home/username
+letsencrypt_email: me@example.com
+
+aws_region: us-central-1
+aws_ecr_user_key_id: ABCD............XYZ
+aws_ecr_user_secret: abcd...............................xyz
+aws_ecr_repository: 111222333444
+
+mongo_root_username: adminusername
+mongo_api_username: apiusername
+mongo_db_name: my_db
+mongo_db_port: 27017
+
+backend_service_name: my-backend
+frontend_service_name: my-frontend
+database_service_name: my-mongo
+
+backend_internal_port: 3000
+backend_external_port: 3000
+
+frontend_internal_port: 80
+frontend_external_port: 80

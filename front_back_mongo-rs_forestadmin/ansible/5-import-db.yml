@@ -1,0 +1,31 @@
+# TODO: fix & move earlier
+
+- name: Import database collections
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files:
+    - config.yml
+
+  tasks:
+
+    - name: Copy MongoDB JSON dumps to remote server
+      copy:
+        src: '{{item}}'
+        dest: "{{ home_dir }}/db_dump"
+      with_fileglob:
+         - "db_dump/*.json"
+
+    - name: Run mongoimport command
+      tags: import
+      vars:
+        container: ubuntu_al-launcher-mongo_1
+        mongo_api_password: ...
+      command: "docker exec -i {{ container }} mongoimport --file=/db_dump/{{item}}.json --username={{ mongo_api_username }} --password={{ mongo_api_password }} --db {{ mongo_db_name }} --jsonArray"
+      # with_fileglob:
+      #    - "db_dump/*.json"
+      loop:
+        - collection1
+        - collection2
+      # args:
+      #   chdir: "{{ home_dir }}/db_dump"

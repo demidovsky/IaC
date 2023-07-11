@@ -1,0 +1,83 @@
+- name: Install Certbot, and setup HTTPS server
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files:
+    - config.yml
+  vars:
+    certbot_params: "-n --webroot -w /var/www/letsencrypt -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }},{{ backend_domain_name }}"
+
+  tasks:
+
+    - name: Install Certbot packages
+      tags: apt
+      apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        update_cache: yes
+
+    - name: Creating directory
+      tags: dir
+      file:
+        path: /var/www/letsencrypt
+        state: directory
+
+    - name: Dry run of letsencrypt certificates
+      tags: dry
+      shell: certbot certonly --dry-run {{ certbot_params }}
+      args:
+        creates:
+          - /etc/letsencrypt/live/{{ domain_name }}
+          - /var/www/letsencrypt
+
+
+    - name: Create letsencrypt certificates
+      tags: cert
+      shell: certbot certonly {{ certbot_params }}
+
+
+    - name: Install nginx HTTPS website - frontend
+      tags: conf 
+      template: src=templates/nginx/https.conf dest="/etc/nginx/sites-enabled/{{ domain_name }}.conf"
+
+
+    - name: Install nginx HTTPS website - backend
+      tags: conf
+      vars:
+        domain_name: "{{ backend_domain_name }}"
+        frontend_external_port: "{{ backend_external_port }}"
+      template: src=templates/nginx/https.conf dest="/etc/nginx/sites-enabled/{{ backend_domain_name }}.conf"
+
+
+    - name: Install ssl options
+      tags: ssl
+      copy: src=templates/nginx/options-ssl-nginx.conf dest=/etc/letsencrypt/options-ssl-nginx.conf
+
+
+    - name: Generate dhparam
+      tags: ssl
+      shell: openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
+
+
+    - name: Reload nginx
+      tags: run
+      service: name=nginx state=restarted
+
+
+    - name: Ensure Nginx is running
+      tags: run
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+
+    - name: Setup Certbot automatic renewal
+      tags: cron
+      cron:
+        name: "Certbot renewal"
+        minute: "0"
+        hour: "0"
+        weekday: "0"
+        job: "certbot renew --quiet --webroot -w /var/www/letsencrypt"

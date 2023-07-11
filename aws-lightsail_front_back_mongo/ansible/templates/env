@@ -1,0 +1,6 @@
+NODE_ENV=production
+PORT={{ backend_internal_port }}
+MONGODB_URI=mongodb://{{ mongo_api_username }}:{{ mongo_api_password }}@{{ database_service_name }}:27017/{{ mongo_db_name }}
+MONGO_INITDB_ROOT_USERNAME={{ mongo_root_username }}
+MONGO_INITDB_ROOT_PASSWORD={{ mongo_root_password }}
+MONGO_INITDB_DATABASE={{ mongo_db_name }}

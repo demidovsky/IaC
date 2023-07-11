@@ -1,0 +1,92 @@
+version: "3"
+
+networks:
+  docker-network:
+    driver: bridge
+
+services:
+
+# -------------- DB -------------- #
+  {{ database_service_name }}:
+    name: {{ database_service_name }}
+    image: mongo
+    ports:
+      - "{{ mongo_db_port }}:27017"
+    env_file:
+      - ./{{ database_service_name }}.env
+    restart: unless-stopped
+    entrypoint: [ "/usr/bin/mongod", "--config", "/etc/mongod.conf" ]
+    volumes:
+      # - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro # create db user and init replica
+      - ./mongo-volume-1:/data/db
+      - ./mongo-keyfile:/etc/mongo-keyfile
+      - ./mongod.conf:/etc/mongod.conf
+      - ./db_dump:/db_dump
+    depends_on:
+      - mongo-2
+      - mongo-3
+    networks:
+      - docker-network
+
+  # SECONDARY 2
+  mongo-2:
+    image: mongo
+    ports:
+      - "{{ mongo_db_port2 }}:27017"
+    env_file:
+      - ./{{ database_service_name }}.env
+    restart: unless-stopped
+    entrypoint: [ "/usr/bin/mongod", "--config", "/etc/mongod.conf" ]
+    volumes:
+      - ./mongo-volume-2:/data/db
+      - ./mongo-keyfile:/etc/mongo-keyfile
+      - ./mongod.conf:/etc/mongod.conf
+      - ./db_dump:/db_dump
+    networks:
+      - docker-network
+
+  # SECONDARY 3
+  mongo-3:
+    image: mongo
+    ports:
+      - "{{ mongo_db_port3 }}:27017"
+    env_file:
+      - ./{{ database_service_name }}.env
+    restart: unless-stopped
+    entrypoint: [ "/usr/bin/mongod", "--config", "/etc/mongod.conf" ]
+    volumes:
+      - ./mongo-volume-3:/data/db
+      - ./mongo-keyfile:/etc/mongo-keyfile
+      - ./mongod.conf:/etc/mongod.conf
+      - ./db_dump:/db_dump
+    networks:
+      - docker-network
+
+# -------------- BACKEND -------------- #
+  {{ backend_service_name }}:
+    name: {{ backend_service_name }}
+    image: "{{ aws_ecr_repository }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ backend_service_name }}:latest"
+    container_name: "{{ backend_service_name }}"
+    ports:
+      - "{{ backend_external_port }}:{{ backend_internal_port }}"
+    env_file:
+      - ./{{ backend_service_name }}.env
+    depends_on:
+      - "{{ database_service_name }}"
+    restart: unless-stopped
+    networks:
+      - docker-network
+
+# -------------- ADMIN -------------- #
+  {{ admin_service_name }}:
+    name: {{ admin_service_name }}
+    image: "{{ aws_ecr_repository }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ admin_service_name }}:latest"
+    ports:
+      - "3310:3310"
+    env_file:
+      - ./{{ admin_service_name }}.env
+    restart: unless-stopped
+    depends_on:
+      - "{{ database_service_name }}"
+    networks:
+      - docker-network

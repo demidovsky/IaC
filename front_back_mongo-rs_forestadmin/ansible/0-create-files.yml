@@ -1,0 +1,59 @@
+---
+- name: Create files
+  hosts: all
+  become: yes
+  gather_facts: false
+  vars_files:
+    - config.yml
+  
+  tasks:
+
+    - name: Generate MongoDB keyfile
+      shell: openssl rand -base64 756 > {{ home_dir }}/mongo-keyfile && chmod 400 {{ home_dir }}/mongo-keyfile
+      args:
+        creates: mongo-keyfile
+
+    - name: Generate random strings
+      set_fact:
+        mongo_root_password:      "{{ lookup('password', '/dev/null', length=16, chars=['ascii_letters', 'digits']) }}"
+        mongo_api_password:       "{{ lookup('password', '/dev/null', length=16, chars=['ascii_letters', 'digits']) }}"
+
+    # - name: debug1
+    #   tags: debug
+    #   set_fact:
+    #     deb:      "{{ lookup('password', '/dev/null', length=16, chars=['ascii_letters', 'digits']) }}"
+
+    # - name: debug2
+    #   tags: debug
+    #   debug:
+    #     var: deb
+
+    - name: Copy mongo initial script
+      template: src=templates/mongo-init.js dest={{ home_dir }}/mongo-init.js
+
+    - name: Copy mongod.conf
+      tags: conf
+      template: src=templates/mongod.conf dest={{ home_dir }}/mongod.conf
+
+    - name: Copy docker-compose file
+      template: src=templates/docker-compose.yml dest={{ home_dir }}/docker-compose.yml
+
+    - name: Copy Mongo .env file
+      template: src=templates/{{ database_service_name }}.env dest={{ home_dir }}/{{ database_service_name }}.env
+
+    - name: Copy Backend .env file
+      template: src=templates/{{ backend_service_name }}.env dest={{ home_dir }}/{{ backend_service_name }}.env
+
+    - name: Copy Admin .env file
+      template: src=templates/{{ admin_service_name  }}.env dest={{ home_dir }}/{{ admin_service_name  }}.env
+
+    - name: Creates AWS directory
+      file:
+        path: "{{ home_dir }}/.aws"
+        state: directory
+
+    - name: Copy AWS ECR credentials
+      template: src=templates/aws/cred dest={{ home_dir }}/.aws/credentials
+
+    - name: Copy AWS config
+      template: src=templates/aws/conf dest={{ home_dir }}/.aws/config

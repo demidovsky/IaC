@@ -1,0 +1,34 @@
+---
+- name: Create files
+  hosts: all
+  become: yes
+  gather_facts: false
+  vars_files:
+    - config.yml
+  
+  tasks:
+
+    - name: Generate random strings
+      set_fact:
+        mongo_root_password: "{{ lookup('password', '/dev/null', 'length=64 chars=ascii_letters,digits') }}"
+        mongo_api_password: "{{ lookup('password', '/dev/null', 'length=64 chars=ascii_letters,digits') }}"
+
+    - name: Copy mongo initial config
+      template: src=templates/mongo-init.js dest={{ home_dir }}/mongo-init.js
+
+    - name: Copy docker-compose file
+      template: src=templates/docker-compose.yml dest={{ home_dir }}/docker-compose.yml
+
+    - name: Copy .env file
+      template: src=templates/env dest={{ home_dir }}/.env
+
+    - name: Creates AWS directory
+      file:
+        path: "{{ home_dir }}/.aws"
+        state: directory
+
+    - name: Copy AWS ECR credentials
+      template: src=templates/aws/cred dest={{ home_dir }}/.aws/credentials
+
+    - name: Copy AWS config
+      template: src=templates/aws/conf dest={{ home_dir }}/.aws/config

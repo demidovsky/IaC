@@ -1,0 +1,58 @@
+---
+- name: Setup docker-compose
+  hosts: all
+  # become: true # keep original user for aws auth
+  gather_facts: false
+  vars_files:
+    - config.yml
+
+  tasks:
+    - name: Install unzip
+      become: true
+      apt: pkg=unzip state=present
+
+    - name: Download AWS CLI
+      unarchive:
+        src: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: "{{ home_dir }}"
+        remote_src: yes
+
+    - name: Install AWS CLI
+      become: true
+      command: "./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update"
+
+    - name: Get ECR token
+      tags: login
+      command: "aws ecr get-login-password --region {{ aws_region }}"
+      register: ecr_token
+
+    - name: Log into ECR registry
+      tags: login
+      docker_login:
+        registry_url: "{{ aws_ecr_repository }}.dkr.ecr.{{ aws_region }}.amazonaws.com"
+        debug: yes
+        username: "AWS"
+        password: "{{ ecr_token.stdout }}"
+        reauthorize: yes
+
+    - name: Copy docker-compose.yml for setting up replica
+      tags: copy
+      template: src=templates/docker-compose-1.yml dest={{ home_dir }}/docker-compose.yml
+
+    - name: Start services using Docker Compose
+      tags: up
+      docker_compose:
+        project_src: "{{ home_dir }}"
+        state: present
+        pull: yes
+
+    - name: Copy docker-compose.yml for enabling keyfile auth and run all services
+      tags: copy
+      template: src=templates/docker-compose-2.yml dest={{ home_dir }}/docker-compose.yml
+
+    - name: Start services using Docker Compose
+      tags: restart
+      docker_compose:
+        project_src: "{{ home_dir }}"
+        state: present
+        restarted: yes

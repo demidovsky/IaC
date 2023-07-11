@@ -1,0 +1,46 @@
+version: "3"
+
+networks:
+  docker-network:
+    driver: bridge
+
+services:
+
+# -------------- BACKEND -------------- #
+  {{ backend_service_name }}:
+    image: "{{ aws_ecr_repository }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ backend_service_name }}:latest"
+    container_name: "{{ backend_service_name }}"
+    ports:
+      - "{{ backend_external_port }}:{{ backend_internal_port }}"
+    env_file:
+      - .env
+    depends_on:
+      - "{{ database_service_name }}"
+    restart: unless-stopped
+    networks:
+      - docker-network
+
+# -------------- FRONTEND -------------- #
+  {{ frontend_service_name }}:
+    image: "{{ aws_ecr_repository }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ frontend_service_name }}:latest"
+    container_name: "{{ frontend_service_name }}"
+    ports:
+      - "{{ frontend_external_port }}:{{ frontend_internal_port }}"
+    restart: unless-stopped
+    networks:
+      - docker-network
+
+# -------------- DATABASE -------------- #
+  {{ database_service_name }}:
+    image: mongo
+    container_name: "{{ database_service_name }}"
+    # ports:
+    #   - "{{ mongo_db_port }}:27017"
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - "{{ home_dir }}/mongo-volume:/data/db"
+      - "{{ home_dir }}/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro"
+    networks:
+      - docker-network

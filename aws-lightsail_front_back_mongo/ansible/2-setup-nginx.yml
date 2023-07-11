@@ -1,0 +1,41 @@
+- name: Install Nginx, and setup HTTP server
+  hosts: all
+  become: true
+  vars_files:
+    - config.yml
+
+  tasks:
+    - name: Install Nginx package
+      apt:
+        name:
+          - nginx
+        update_cache: yes
+
+
+    - name: Remove default Nginx configuration
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+
+    - name: Install system nginx config
+      copy: src=templates/nginx/nginx.conf dest=/etc/nginx/nginx.conf
+    - name: Install compression config
+      copy: src=templates/nginx/compression.conf dest=/etc/nginx/compression.conf
+    - name: Install proxy config
+      copy: src=templates/nginx/proxy.conf dest=/etc/nginx/proxy.conf
+
+
+    - name: Install nginx HTTP website
+      template: src=templates/nginx/http.conf dest="/etc/nginx/sites-enabled/{{ domain_name }}.conf"
+
+
+    - name: Reload nginx
+      service: name=nginx state=restarted
+
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
